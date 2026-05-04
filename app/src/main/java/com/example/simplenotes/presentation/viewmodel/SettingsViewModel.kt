@@ -31,6 +31,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = AppLanguage.ENGLISH
         )
 
+    val aiBaseUrl: StateFlow<String> = userPreferencesRepository.aiBaseUrlFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "http://10.0.2.2:11434/"
+        )
+
     fun setTheme(theme: AppTheme) {
         viewModelScope.launch {
             userPreferencesRepository.updateAppTheme(theme)
@@ -40,6 +47,12 @@ class SettingsViewModel @Inject constructor(
     fun setLanguage(language: AppLanguage) {
         viewModelScope.launch {
             userPreferencesRepository.updateAppLanguage(language)
+        }
+    }
+
+    fun setAiBaseUrl(url: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.updateAiBaseUrl(url)
         }
     }
 }

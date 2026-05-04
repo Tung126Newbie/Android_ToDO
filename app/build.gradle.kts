@@ -28,7 +28,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties["GEMINI_API_KEY"] ?: ""}\"")
     }
 
     buildTypes {
@@ -105,8 +104,10 @@ dependencies {
     // Coil
     implementation("io.coil-kt:coil-compose:2.6.0")
 
-    // Gemini AI
-    implementation(libs.generativeai)
+    // Retrofit & Networking
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp.logging)
 
     // Testing
     testImplementation(libs.junit)

@@ -29,6 +29,7 @@ class UserPreferencesRepository @Inject constructor(
     private object PreferencesKeys {
         val APP_THEME = stringPreferencesKey("app_theme")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
+        val AI_BASE_URL = stringPreferencesKey("ai_base_url")
     }
 
     val appThemeFlow: Flow<AppTheme> = context.dataStore.data
@@ -65,6 +66,18 @@ class UserPreferencesRepository @Inject constructor(
             }
         }
 
+    val aiBaseUrlFlow: Flow<String> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[PreferencesKeys.AI_BASE_URL] ?: "http://10.0.2.2:11434/"
+        }
+
     suspend fun updateAppTheme(theme: AppTheme) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.APP_THEME] = theme.name
@@ -74,6 +87,12 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateAppLanguage(language: AppLanguage) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.APP_LANGUAGE] = language.name
+        }
+    }
+
+    suspend fun updateAiBaseUrl(url: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.AI_BASE_URL] = url
         }
     }
 }

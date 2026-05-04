@@ -2,11 +2,15 @@ package com.example.simplenotes.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.simplenotes.data.repository.AppLanguage
+import com.example.simplenotes.data.repository.NoteRepositoryImpl
+import com.example.simplenotes.data.repository.UserPreferencesRepository
 import com.example.simplenotes.domain.model.Note
 import com.example.simplenotes.domain.model.Reminder
+import com.example.simplenotes.domain.model.LocalAiResponse
 import com.example.simplenotes.domain.repository.NoteRepository
 import com.example.simplenotes.presentation.util.ReminderScheduler
-import com.example.simplenotes.util.GeminiService
+import com.example.simplenotes.util.LocalAiService
 import com.example.simplenotes.util.StringUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +29,8 @@ enum class SortType {
 class NoteViewModel @Inject constructor(
     private val repository: NoteRepository,
     private val reminderScheduler: ReminderScheduler,
-    private val geminiService: GeminiService
+    private val localAiService: LocalAiService,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _sortType = MutableStateFlow(SortType.CUSTOM)
@@ -70,8 +75,15 @@ class NoteViewModel @Inject constructor(
     private val _currentNote = MutableStateFlow<Note?>(null)
     val currentNote: StateFlow<Note?> = _currentNote.asStateFlow()
 
+    // AI States
+    private val _aiResult = MutableStateFlow<LocalAiResponse?>(null)
+    val aiResult: StateFlow<LocalAiResponse?> = _aiResult.asStateFlow()
+
     private val _isAiLoading = MutableStateFlow(false)
     val isAiLoading: StateFlow<Boolean> = _isAiLoading.asStateFlow()
+
+    private val _aiError = MutableStateFlow<String?>(null)
+    val aiError: StateFlow<String?> = _aiError.asStateFlow()
 
     init {
         loadNotes()
@@ -123,15 +135,6 @@ class NoteViewModel @Inject constructor(
 
     fun setCurrentNote(note: Note?) {
         _currentNote.value = note
-    }
-
-    fun optimizeWithAi(title: String, content: String, onResult: (GeminiService.AiResponse?) -> Unit) {
-        viewModelScope.launch {
-            _isAiLoading.value = true
-            val result = geminiService.optimizeNote(title, content)
-            _isAiLoading.value = false
-            onResult(result)
-        }
     }
 
     fun insertOrUpdateNote(
@@ -255,5 +258,34 @@ class NoteViewModel @Inject constructor(
 
     fun clearCurrentNote() {
         _currentNote.value = null
+        _aiResult.value = null
+        _aiError.value = null
+    }
+
+    fun processNoteWithAi(content: String) {
+        if (content.isBlank()) return
+        viewModelScope.launch {
+            _isAiLoading.value = true
+            _aiError.value = null
+            _aiResult.value = null
+            
+            val language = userPreferencesRepository.appLanguageFlow.first()
+            val languageCode = if (language == AppLanguage.VIETNAMESE) "vi" else "en"
+            
+            localAiService.processNote(content, languageCode)
+                .onSuccess {
+                    _aiResult.value = it
+                }
+                .onFailure {
+                    _aiError.value = it.message ?: "Unknown error occurred"
+                }
+            
+            _isAiLoading.value = false
+        }
+    }
+
+    fun clearAiResult() {
+        _aiResult.value = null
+        _aiError.value = null
     }
 }
