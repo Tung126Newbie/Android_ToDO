@@ -4,7 +4,8 @@ import android.content.Context
 import android.os.Build
 import com.example.simplenotes.data.database.NoteDao
 import com.example.simplenotes.data.database.NoteDatabase
-import com.example.simplenotes.data.remote.ollama.OllamaApi
+import com.example.simplenotes.data.remote.ai.AiApiService
+import com.example.simplenotes.data.remote.ai.RetrofitClient
 import com.example.simplenotes.data.repository.NoteRepositoryImpl
 import com.example.simplenotes.data.repository.UserPreferencesRepository
 import com.example.simplenotes.domain.repository.NoteRepository
@@ -112,12 +113,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOllamaApi(okHttpClient: OkHttpClient): OllamaApi {
-        return Retrofit.Builder()
-            .baseUrl("http://localhost/") // Placeholder
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(OllamaApi::class.java)
+    fun provideAiApiService(): AiApiService {
+        return RetrofitClient.aiApiService
     }
 }

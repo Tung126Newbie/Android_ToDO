@@ -10,7 +10,7 @@ import com.example.simplenotes.domain.model.Reminder
 import com.example.simplenotes.domain.model.LocalAiResponse
 import com.example.simplenotes.domain.repository.NoteRepository
 import com.example.simplenotes.presentation.util.ReminderScheduler
-import com.example.simplenotes.util.LocalAiService
+import com.example.simplenotes.util.CloudAiService
 import com.example.simplenotes.util.StringUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,7 @@ enum class SortType {
 class NoteViewModel @Inject constructor(
     private val repository: NoteRepository,
     private val reminderScheduler: ReminderScheduler,
-    private val localAiService: LocalAiService,
+    private val cloudAiService: CloudAiService,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -272,7 +272,7 @@ class NoteViewModel @Inject constructor(
             val language = userPreferencesRepository.appLanguageFlow.first()
             val languageCode = if (language == AppLanguage.VIETNAMESE) "vi" else "en"
             
-            localAiService.processNote(content, languageCode)
+            cloudAiService.processNote(content, languageCode)
                 .onSuccess {
                     _aiResult.value = it
                 }
