@@ -46,10 +46,13 @@ class CloudAiService @Inject constructor(
                    - Handle Vietnamese: "nhắc tôi", "hẹn giờ", "sáng mai", "chiều nay".
                    - If no specific time or intent is found, return null.
                 6. ai_question: If suggested_time is present, ask to set the alarm in $languageCode.
+                7. is_outdoor_intent: BOOLEAN. True if the user mentions going outside, traveling, working at a specific place, or activities affected by weather.
+                8. location_name: STRING. Extract the specific location mentioned (e.g., "Hà Nội", "Đà Lạt", "Công viên"). If no specific location, return null.
 
                 CRITICAL CONSTRAINTS:
                 - Return ONLY raw JSON.
                 - "suggested_time" MUST BE A NUMBER (e.g. 1713751200000).
+                - "is_outdoor_intent" MUST BE A BOOLEAN.
                 - Language for all text must be exactly $languageCode.
                 - For relative times like "tomorrow", calculate based on the current date provided above.
 

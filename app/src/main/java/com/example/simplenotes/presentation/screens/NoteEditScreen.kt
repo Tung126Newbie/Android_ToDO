@@ -99,6 +99,8 @@ fun NoteEditScreen(
     val aiResult by viewModel.aiResult.collectAsState()
     val isAiLoading by viewModel.isAiLoading.collectAsState()
     val aiError by viewModel.aiError.collectAsState()
+    val weatherData by viewModel.weatherData.collectAsState()
+    val isWeatherLoading by viewModel.isWeatherLoading.collectAsState()
 
     var titleValue by remember { mutableStateOf(TextFieldValue("")) }
     var contentValue by remember { mutableStateOf(TextFieldValue("")) }
@@ -553,6 +555,60 @@ fun NoteEditScreen(
                                 Spacer(Modifier.height(8.dp))
                                 Text(if (isVietnamese) "Gợi ý nhắc nhở:" else "Reminder Suggestion:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                 Text(result.reminder, style = MaterialTheme.typography.bodyMedium)
+                            }
+
+                            // Weather Display
+                            if (isWeatherLoading) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+                            } else if (weatherData != null) {
+                                Spacer(Modifier.height(12.dp))
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = if (weatherData!!.locationName != null) 
+                                                    (if (isVietnamese) "Thời tiết tại ${weatherData!!.locationName}:" else "Weather at ${weatherData!!.locationName}:")
+                                                    else (if (isVietnamese) "Thời tiết hiện tại:" else "Current weather:"),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = "${weatherData!!.temperature}°C - ${weatherData!!.getWeatherDescription(isVietnamese)}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = if (weatherData!!.isDay) Icons.Default.WbSunny else Icons.Default.NightsStay,
+                                            contentDescription = null,
+                                            tint = if (weatherData!!.isDay) Color(0xFFFFB300) else Color(0xFF5C6BC0)
+                                        )
+                                    }
+                                }
+                            } else if (result.isOutdoorIntent == true) {
+                                // Buttons to fetch weather if not already fetched
+                                Spacer(Modifier.height(12.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (!result.locationName.isNullOrBlank()) {
+                                        AssistChip(
+                                            onClick = { viewModel.fetchWeatherByLocationName(result.locationName) },
+                                            label = { Text(if (isVietnamese) "Xem thời tiết ${result.locationName}" else "Check weather for ${result.locationName}", fontSize = 10.sp) },
+                                            leadingIcon = { Icon(Icons.Default.Cloud, null, modifier = Modifier.size(14.dp)) }
+                                        )
+                                    }
+                                    AssistChip(
+                                        onClick = { viewModel.fetchWeatherForCurrentLocation() },
+                                        label = { Text(if (isVietnamese) "Vị trí hiện tại" else "Current Location", fontSize = 10.sp) },
+                                        leadingIcon = { Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(14.dp)) }
+                                    )
+                                }
                             }
 
                             // AI Action Buttons

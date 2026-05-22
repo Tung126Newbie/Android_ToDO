@@ -8,5 +8,7 @@ data class LocalAiResponse(
     @SerializedName("reminder") val reminder: String,
     @SerializedName("rewritten_content") val rewrittenContent: String? = null,
     @SerializedName("suggested_time") val suggestedTime: Long? = null, // Epoch millis
-    @SerializedName("ai_question") val aiQuestion: String? = null // Question for user
+    @SerializedName("ai_question") val aiQuestion: String? = null, // Question for user
+    @SerializedName("is_outdoor_intent") val isOutdoorIntent: Boolean? = false,
+    @SerializedName("location_name") val locationName: String? = null
 )

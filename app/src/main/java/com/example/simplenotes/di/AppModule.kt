@@ -6,6 +6,7 @@ import com.example.simplenotes.data.database.NoteDao
 import com.example.simplenotes.data.database.NoteDatabase
 import com.example.simplenotes.data.remote.ai.AiApiService
 import com.example.simplenotes.data.remote.ai.RetrofitClient
+import com.example.simplenotes.data.remote.weather.WeatherApiService
 import com.example.simplenotes.data.repository.NoteRepositoryImpl
 import com.example.simplenotes.data.repository.UserPreferencesRepository
 import com.example.simplenotes.domain.repository.NoteRepository
@@ -115,5 +116,15 @@ object AppModule {
     @Singleton
     fun provideAiApiService(): AiApiService {
         return RetrofitClient.aiApiService
+    }
+
+    @Provides
+    @Singleton
+    fun provideWeatherApiService(): WeatherApiService {
+        return Retrofit.Builder()
+            .baseUrl("https://api.open-meteo.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(WeatherApiService::class.java)
     }
 }
