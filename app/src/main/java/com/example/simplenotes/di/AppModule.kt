@@ -4,7 +4,9 @@ import android.content.Context
 import android.os.Build
 import com.example.simplenotes.data.database.NoteDao
 import com.example.simplenotes.data.database.NoteDatabase
-import com.example.simplenotes.data.remote.ollama.OllamaApi
+import com.example.simplenotes.data.remote.ai.AiApiService
+import com.example.simplenotes.data.remote.ai.RetrofitClient
+import com.example.simplenotes.data.remote.weather.WeatherApiService
 import com.example.simplenotes.data.repository.NoteRepositoryImpl
 import com.example.simplenotes.data.repository.UserPreferencesRepository
 import com.example.simplenotes.domain.repository.NoteRepository
@@ -112,12 +114,17 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOllamaApi(okHttpClient: OkHttpClient): OllamaApi {
+    fun provideAiApiService(): AiApiService {
+        return RetrofitClient.aiApiService
+    }
+
+    @Provides
+    @Singleton
+    fun provideWeatherApiService(): WeatherApiService {
         return Retrofit.Builder()
-            .baseUrl("http://localhost/") // Placeholder
-            .client(okHttpClient)
+            .baseUrl("https://api.open-meteo.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(OllamaApi::class.java)
+            .create(WeatherApiService::class.java)
     }
 }

@@ -8,10 +8,13 @@ import com.example.simplenotes.data.repository.UserPreferencesRepository
 import com.example.simplenotes.domain.model.Note
 import com.example.simplenotes.domain.model.Reminder
 import com.example.simplenotes.domain.model.LocalAiResponse
+import com.example.simplenotes.domain.model.WeatherData
 import com.example.simplenotes.domain.repository.NoteRepository
 import com.example.simplenotes.presentation.util.ReminderScheduler
-import com.example.simplenotes.util.LocalAiService
+import com.example.simplenotes.util.CloudAiService
+import com.example.simplenotes.util.LocationService
 import com.example.simplenotes.util.StringUtils
+import com.example.simplenotes.util.WeatherService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -29,7 +32,9 @@ enum class SortType {
 class NoteViewModel @Inject constructor(
     private val repository: NoteRepository,
     private val reminderScheduler: ReminderScheduler,
-    private val localAiService: LocalAiService,
+    private val cloudAiService: CloudAiService,
+    private val weatherService: WeatherService,
+    private val locationService: LocationService,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -84,6 +89,12 @@ class NoteViewModel @Inject constructor(
 
     private val _aiError = MutableStateFlow<String?>(null)
     val aiError: StateFlow<String?> = _aiError.asStateFlow()
+
+    private val _weatherData = MutableStateFlow<WeatherData?>(null)
+    val weatherData: StateFlow<WeatherData?> = _weatherData.asStateFlow()
+
+    private val _isWeatherLoading = MutableStateFlow(false)
+    val isWeatherLoading: StateFlow<Boolean> = _isWeatherLoading.asStateFlow()
 
     init {
         loadNotes()
@@ -268,13 +279,17 @@ class NoteViewModel @Inject constructor(
             _isAiLoading.value = true
             _aiError.value = null
             _aiResult.value = null
+            _weatherData.value = null
             
             val language = userPreferencesRepository.appLanguageFlow.first()
             val languageCode = if (language == AppLanguage.VIETNAMESE) "vi" else "en"
             
-            localAiService.processNote(content, languageCode)
-                .onSuccess {
-                    _aiResult.value = it
+            cloudAiService.processNote(content, languageCode)
+                .onSuccess { result ->
+                    _aiResult.value = result
+                    if (result.isOutdoorIntent == true) {
+                        fetchWeatherForAiResult(result)
+                    }
                 }
                 .onFailure {
                     _aiError.value = it.message ?: "Unknown error occurred"
@@ -284,8 +299,51 @@ class NoteViewModel @Inject constructor(
         }
     }
 
+    private fun fetchWeatherForAiResult(result: LocalAiResponse) {
+        viewModelScope.launch {
+            _isWeatherLoading.value = true
+            val locationName = result.locationName
+            if (!locationName.isNullOrBlank()) {
+                val coords = weatherService.getCoordinatesFromLocationName(locationName)
+                if (coords != null) {
+                    weatherService.fetchWeather(coords.first, coords.second)
+                        .onSuccess { _weatherData.value = it.copy(locationName = locationName) }
+                }
+            } else {
+                // Fallback to current location if no specific location mentioned
+                fetchWeatherForCurrentLocation()
+            }
+            _isWeatherLoading.value = false
+        }
+    }
+
+    fun fetchWeatherForCurrentLocation() {
+        viewModelScope.launch {
+            _isWeatherLoading.value = true
+            val location = locationService.getCurrentLocation()
+            if (location != null) {
+                weatherService.fetchWeather(location.latitude, location.longitude)
+                    .onSuccess { _weatherData.value = it.copy(locationName = null) }
+            }
+            _isWeatherLoading.value = false
+        }
+    }
+
+    fun fetchWeatherByLocationName(name: String) {
+        viewModelScope.launch {
+            _isWeatherLoading.value = true
+            val coords = weatherService.getCoordinatesFromLocationName(name)
+            if (coords != null) {
+                weatherService.fetchWeather(coords.first, coords.second)
+                    .onSuccess { _weatherData.value = it.copy(locationName = name) }
+            }
+            _isWeatherLoading.value = false
+        }
+    }
+
     fun clearAiResult() {
         _aiResult.value = null
         _aiError.value = null
+        _weatherData.value = null
     }
 }
